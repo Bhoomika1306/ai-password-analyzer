@@ -37,7 +37,7 @@ function App() {
     setError(null)
     
     try {
-      const response = await fetch('https://ai-password-analyzer.onrender.com/analyze', {
+    const response = await fetch('https://ai-password-analyzer.onrender.com/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
