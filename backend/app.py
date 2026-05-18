@@ -6,10 +6,17 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pickle
 import numpy as np
+import os
 
 # Create Flask app
 app = Flask(__name__)
-CORS(app)  # Allow frontend to communicate with backend
+
+# Allow requests from your Vercel frontend and local development
+CORS(app, origins=[
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://ai-password-analyzer-iqnuggvwy-bhoomika1306-projects.vercel.app"
+])
 
 
 # ============================================
@@ -17,7 +24,6 @@ CORS(app)  # Allow frontend to communicate with backend
 # ============================================
 
 # Load the model we trained in train_model.py
-# 'rb' = read binary mode
 with open('model.pkl', 'rb') as file:
     model = pickle.load(file)
 
@@ -69,7 +75,6 @@ def get_risk_level(strength):
 def calculate_score(features, strength):
     """
     Calculate a score from 0-100 based on password features.
-    This gives users a more granular understanding than just Weak/Medium/Strong.
     """
     score = 0
     
@@ -112,13 +117,13 @@ def calculate_score(features, strength):
     
     # Adjust based on ML prediction
     if strength == 'Weak':
-        score = min(score, 40)  # Cap weak passwords at 40
+        score = min(score, 40)
     elif strength == 'Medium':
-        score = min(max(score, 41), 70)  # Medium between 41-70
+        score = min(max(score, 41), 70)
     else:
-        score = max(score, 71)  # Strong at least 71
+        score = max(score, 71)
     
-    return min(score, 100)  # Max 100
+    return min(score, 100)
 
 
 def generate_suggestions(features, strength):
@@ -210,7 +215,6 @@ def analyze_password():
         features = extract_features(password)
         
         # Convert features to array format for the model
-        # Order MUST match the training features exactly!
         feature_array = np.array([[
             features['length'],
             features['uppercase_count'],
@@ -233,12 +237,12 @@ def analyze_password():
         
         # Return the result
         return jsonify({
-            "password": password,  # Optional: return for reference
+            "password": password,
             "strength": strength,
             "score": score,
             "risk": risk,
             "suggestions": suggestions,
-            "features": features  # Optional: for debugging
+            "features": features
         })
     
     except Exception as e:
@@ -253,4 +257,6 @@ def analyze_password():
 # ============================================
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Use PORT from environment variable (for Render), default to 5000
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
