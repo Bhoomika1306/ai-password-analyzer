@@ -26,38 +26,30 @@ function App() {
   const [shake, setShake] = useState(false)
 
   // Analyze password function
-  const analyzePassword = async () => {
-    if (!password) {
-      setShake(true)
-      setTimeout(() => setShake(false), 500)
-      return
-    }
-    
-    setLoading(true)
-    setError(null)
-    
-    try {
+ const analyzePassword = async () => {
+  if (!password) return;
+  
+  setLoading(true);
+  setError(null);
+
+  try {
     const response = await fetch('https://ai-password-analyzer.onrender.com/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to analyze password')
-      }
-      
-      const data = await response.json()
-      setResult(data)
-    } catch (error) {
-      console.error('Error:', error)
-      setError('Failed to analyze password. Make sure backend is running on port 5000!')
-    } finally {
-      setLoading(false)
-    }
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ password }),
+    });
+    
+    const data = await response.json();
+    setResult(data);
+  } catch (error) {
+    console.error('Error:', error);
+    setError('Failed to analyze password. Backend may be sleeping, please try again in 30 seconds.');
+  } finally {
+    setLoading(false);
   }
+}
 
   // Copy password to clipboard
   const copyPassword = () => {
