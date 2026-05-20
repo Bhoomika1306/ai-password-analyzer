@@ -1,309 +1,207 @@
-import { useState, useEffect } from 'react'
-import { 
-  Eye, 
-  EyeOff, 
-  Lock, 
-  Shield, 
-  ShieldAlert, 
-  ShieldCheck, 
-  AlertTriangle, 
-  CheckCircle, 
-  Zap, 
-  RefreshCw,
-  Copy,
-  Check,
-  Sparkles
-} from 'lucide-react'
+import { useState } from 'react'
+import { Lock, Shield, AlertTriangle, CheckCircle, Sparkles, Copy, Eye, EyeOff } from 'lucide-react'
+import './App.css'
 
 function App() {
-  // State variables
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [showPassword, setShowPassword] = useState(false)
   const [copied, setCopied] = useState(false)
   const [shake, setShake] = useState(false)
 
-  // Analyze password function
- const analyzePassword = async () => {
-  if (!password) return;
-  
-  setLoading(true);
-  setError(null);
+  // HARDCODED RENDER BACKEND URL
+  const API_URL = 'https://ai-password-analyzer.onrender.com'
 
-  try {
-    const response = await fetch('https://ai-password-analyzer.onrender.com/analyze', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ password }),
-    });
+  const analyzePassword = async () => {
+    if (!password) return;
     
-    const data = await response.json();
-    setResult(data);
-  } catch (error) {
-    console.error('Error:', error);
-    setError('Failed to analyze password. Backend may be sleeping, please try again in 30 seconds.');
-  } finally {
-    setLoading(false);
-  }
-}
+    setLoading(true)
+    setError(null)
 
-  // Copy password to clipboard
-  const copyPassword = () => {
-    navigator.clipboard.writeText(password)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      const response = await fetch(`${API_URL}/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setResult(data)
+    } catch (err) {
+      console.error('Error:', err)
+      setError('Backend is waking up... Please wait 30 seconds and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Generate a strong password
   const generatePassword = () => {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
     let generated = ''
     for (let i = 0; i < 16; i++) {
       generated += chars.charAt(Math.floor(Math.random() * chars.length))
     }
     setPassword(generated)
     setResult(null)
+    setError(null)
   }
 
-  // Get color based on strength
+  const copyToClipboard = () => {
+    if (password) {
+      navigator.clipboard.writeText(password)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   const getStrengthColor = (strength) => {
-    const colors = {
-      'Weak': 'bg-red-500',
-      'Medium': 'bg-yellow-500',
-      'Strong': 'bg-green-500'
+    switch (strength) {
+      case 'Strong': return 'text-green-400'
+      case 'Medium': return 'text-yellow-400'
+      case 'Weak': return 'text-red-400'
+      default: return 'text-gray-400'
     }
-    return colors[strength] || 'bg-gray-500'
   }
 
-  const getStrengthTextColor = (strength) => {
-    const colors = {
-      'Weak': 'text-red-400',
-      'Medium': 'text-yellow-400',
-      'Strong': 'text-green-400'
+  const getRiskColor = (risk) => {
+    switch (risk) {
+      case 'Low': return 'text-green-400'
+      case 'Medium': return 'text-yellow-400'
+      case 'High': return 'text-red-400'
+      default: return 'text-gray-400'
     }
-    return colors[strength] || 'text-gray-400'
-  }
-
-  // Get risk icon and color
-  const getRiskInfo = (risk) => {
-    const info = {
-      'High': { icon: ShieldAlert, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
-      'Medium': { icon: Shield, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' },
-      'Low': { icon: ShieldCheck, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' }
-    }
-    return info[risk] || { icon: Shield, color: 'text-gray-400', bg: 'bg-gray-500/10 border-gray-500/20' }
-  }
-
-  // Get strength width for progress bar
-  const getStrengthWidth = (score) => {
-    return `${score}%`
-  }
-
-  // Get strength emoji
-  const getStrengthEmoji = (strength) => {
-    const emojis = {
-      'Weak': '🔴',
-      'Medium': '🟡',
-      'Strong': '🟢'
-    }
-    return emojis[strength] || '⚪'
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decorative elements */}
-      <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-      
-      {/* Main Card */}
-      <div className={`w-full max-w-md glass-card rounded-3xl shadow-2xl p-8 relative z-10 ${shake ? 'animate-shake' : ''}`}>
-        
-        {/* Header */}
-        <div className="text-center mb-8 animate-fade-in">
-          <div className="flex justify-center mb-4">
-            <div className="p-4 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl border border-blue-500/30 animate-pulse-glow">
-              <Lock className="w-10 h-10 text-blue-400" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
+          <div className="flex items-center justify-center mb-6">
+            <div className="bg-purple-500/20 p-3 rounded-full">
+              <Lock className="w-8 h-8 text-purple-300" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+          
+          <h1 className="text-3xl font-bold text-center text-white mb-2">
             AI Password Analyzer
           </h1>
-          <p className="text-slate-400 text-sm">
-            Powered by Machine Learning
+          <p className="text-center text-purple-200 mb-8">
+            Check your password strength with ML
           </p>
-        </div>
 
-        {/* Password Input */}
-        <div className="mb-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Enter Password
-          </label>
-          <div className="relative group">
+          <div className="relative mb-6">
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                setResult(null)
-                setError(null)
-              }}
-              onKeyPress={(e) => e.key === 'Enter' && analyzePassword()}
-              placeholder="Type your password..."
-              className="w-full px-4 py-4 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all pr-24"
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password..."
+              className="w-full px-4 py-3 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              {password && (
-                <button
-                  onClick={copyPassword}
-                  className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-700/50"
-                  title="Copy password"
-                >
-                  {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                </button>
+            <button
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-300 hover:text-white"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+
+          <div className="flex gap-3 mb-6">
+            <button
+              onClick={analyzePassword}
+              disabled={loading || !password}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Shield className="w-5 h-5" />
+                  Analyze Password
+                </>
               )}
-              <button
-                onClick={() => setShowPassword(!showPassword)}
-                className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-700/50"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-3 mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <button
-            onClick={analyzePassword}
-            disabled={!password || loading}
-            className={`flex-1 py-4 rounded-xl font-semibold text-white transition-all ${
-              !password || loading
-                ? 'bg-slate-700 cursor-not-allowed opacity-50'
-                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-blue-500/25 transform hover:-translate-y-0.5 active:translate-y-0'
-            }`}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <RefreshCw className="w-5 h-5 animate-spin" />
-                Analyzing...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <Zap className="w-5 h-5" />
-                Analyze Password
-              </span>
-            )}
-          </button>
-          
-          <button
-            onClick={generatePassword}
-            className="px-4 py-4 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 rounded-xl text-white transition-all hover:shadow-lg"
-            title="Generate strong password"
-          >
-            <Sparkles className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm animate-fade-in flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-            {error}
-          </div>
-        )}
-
-        {/* Results Section */}
-        {result && !error && (
-          <div className="space-y-5 animate-fade-in">
+            </button>
             
-            {/* Strength Score Card */}
-            <div className="bg-slate-800/30 rounded-2xl p-5 border border-slate-700/50">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{getStrengthEmoji(result.strength)}</span>
-                  <span className="text-sm font-medium text-slate-300">Strength</span>
-                </div>
-                <span className={`text-lg font-bold ${getStrengthTextColor(result.strength)}`}>
-                  {result.strength}
-                </span>
-              </div>
-              
-              {/* Progress Bar */}
-              <div className="relative w-full bg-slate-700 rounded-full h-4 overflow-hidden">
-                <div
-                  className={`h-full rounded-full progress-bar ${getStrengthColor(result.strength)}`}
-                  style={{ width: getStrengthWidth(result.score) }}
-                />
-              </div>
-              
-              <div className="flex justify-between mt-2">
-                <span className="text-xs text-slate-500">0</span>
-                <span className="text-xs font-medium text-slate-400">Score: {result.score}/100</span>
-                <span className="text-xs text-slate-500">100</span>
-              </div>
-            </div>
-
-            {/* Risk Level Card */}
-            {(() => {
-              const riskInfo = getRiskInfo(result.risk)
-              const RiskIcon = riskInfo.icon
-              return (
-                <div className={`flex items-center gap-4 p-5 rounded-2xl border ${riskInfo.bg} animate-slide-in`}>
-                  <div className={`p-3 rounded-xl bg-slate-800/50`}>
-                    <RiskIcon className={`w-7 h-7 ${riskInfo.color}`} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-400 uppercase tracking-wider">Risk Level</p>
-                    <p className={`text-xl font-bold ${riskInfo.color}`}>
-                      {result.risk}
-                    </p>
-                  </div>
-                </div>
-              )
-            })()}
-
-            {/* Suggestions */}
-            {result.suggestions && result.suggestions.length > 0 && (
-              <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                <h3 className="text-sm font-medium text-slate-300 flex items-center gap-2 mb-3">
-                  <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                  Suggestions to Improve
-                </h3>
-                <ul className="space-y-2 stagger-children">
-                  {result.suggestions.map((suggestion, index) => (
-                    <li
-                      key={index}
-                      className="flex items-start gap-3 text-sm text-slate-300 bg-slate-800/30 p-4 rounded-xl border border-slate-700/30 hover:border-slate-600/50 transition-colors"
-                    >
-                      <div className="p-1 bg-blue-500/10 rounded-lg flex-shrink-0 mt-0.5">
-                        <CheckCircle className="w-4 h-4 text-blue-400" />
-                      </div>
-                      <span>{suggestion}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Success Message */}
-            {result.strength === 'Strong' && result.suggestions.length === 0 && (
-              <div className="p-5 bg-green-500/10 border border-green-500/20 rounded-2xl text-center animate-fade-in">
-                <ShieldCheck className="w-12 h-12 text-green-400 mx-auto mb-2" />
-                <p className="text-green-400 font-semibold">Excellent Password!</p>
-                <p className="text-green-400/70 text-sm">Your password is strong and secure</p>
-              </div>
-            )}
+            <button
+              onClick={generatePassword}
+              className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center gap-2"
+            >
+              <Sparkles className="w-5 h-5" />
+            </button>
+            
+            <button
+              onClick={copyToClipboard}
+              className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center gap-2"
+            >
+              {copied ? <CheckCircle className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+            </button>
           </div>
-        )}
-      </div>
-      
-      {/* Footer */}
-      <div className="absolute bottom-4 text-center text-slate-600 text-xs">
-        AI Password Strength Analyzer • Built with React + Flask + ML
+
+          {error && (
+            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4 mb-4 flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <p className="text-red-200 text-sm">{error}</p>
+            </div>
+          )}
+
+          {result && (
+            <div className="space-y-4">
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-purple-200">Strength</span>
+                  <span className={`font-bold ${getStrengthColor(result.strength)}`}>
+                    {result.strength}
+                  </span>
+                </div>
+                <div className="w-full bg-white/10 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all duration-500 ${
+                      result.strength === 'Strong' ? 'bg-green-400 w-full' :
+                      result.strength === 'Medium' ? 'bg-yellow-400 w-2/3' :
+                      'bg-red-400 w-1/3'
+                    }`}
+                  />
+                </div>
+                <div className="flex justify-between mt-1 text-xs text-purple-300">
+                  <span>Score: {result.score}/100</span>
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-purple-200">Risk Level</span>
+                  <span className={`font-bold ${getRiskColor(result.risk)}`}>
+                    {result.risk}
+                  </span>
+                </div>
+              </div>
+
+              {result.suggestions && result.suggestions.length > 0 && (
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h3 className="text-purple-200 font-semibold mb-2 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Suggestions
+                  </h3>
+                  <ul className="space-y-1">
+                    {result.suggestions.map((suggestion, index) => (
+                      <li key={index} className="text-sm text-purple-300 flex items-start gap-2">
+                        <span className="text-purple-400 mt-1">•</span>
+                        {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
