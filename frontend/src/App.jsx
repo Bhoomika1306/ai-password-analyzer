@@ -12,7 +12,7 @@ function App() {
   const [shake, setShake] = useState(false)
 
   // HARDCODED RENDER BACKEND URL
-  const API_URL = 'https://ai-password-analyzer.onrender.com'
+  const response = await fetch('/api/analyze', {
 
   const analyzePassword = async () => {
     if (!password) return;
