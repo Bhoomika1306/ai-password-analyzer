@@ -21,7 +21,7 @@ function App() {
     setError(null)
 
     try {
-      const response = await fetch(`${API_URL}/analyze`, {
+     const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
