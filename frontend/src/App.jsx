@@ -11,8 +11,8 @@ function App() {
   const [copied, setCopied] = useState(false)
   const [shake, setShake] = useState(false)
 
-  // HARDCODED RENDER BACKEND URL
-  const response = await fetch('/api/analyze', {
+  // API URL - uses same domain on Vercel
+  const API_URL = '/api'
 
   const analyzePassword = async () => {
     if (!password) return;
@@ -37,7 +37,7 @@ function App() {
       setResult(data)
     } catch (err) {
       console.error('Error:', err)
-      setError('Backend is waking up... Please wait 30 seconds and try again.')
+      setError('Failed to analyze password. Please try again.')
     } finally {
       setLoading(false)
     }
